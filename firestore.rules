@@ -1,0 +1,65 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function myRole() {
+      return get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.role;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && myRole() == 'admin';
+    }
+
+    // profiles/{uid} — {name, email, role: 'admin' | 'editor'}
+    // Only admins create/update/delete staff profiles (see handleAddUser /
+    // removeUser in index.html). A user may always read their own profile
+    // so checkSession() can resolve their role on login.
+    match /profiles/{uid} {
+      allow get: if isSignedIn() && (request.auth.uid == uid || isAdmin());
+      allow list: if isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // settings/site — homepage hero/stats copy. Public read, admin-only write.
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // articles/{id} — {title, body, status: 'draft'|'pending'|'published', createdBy, ...}
+    // Published articles are public. Drafts/pending are visible to their
+    // owner and to admins. Non-admins can never write status:'published'
+    // directly and can't touch other people's articles or delete a
+    // published one (mirrors the button gating in renderAdminArticleList).
+    match /articles/{articleId} {
+      allow get, list: if resource.data.status == 'published'
+                        || (isSignedIn() && (isAdmin() || resource.data.createdBy == request.auth.uid));
+
+      allow create: if isSignedIn()
+                     && request.resource.data.createdBy == request.auth.uid
+                     && (isAdmin() || request.resource.data.status in ['draft', 'pending']);
+
+      allow update: if isSignedIn() && (
+                      isAdmin() ||
+                      (resource.data.createdBy == request.auth.uid
+                       && resource.data.status != 'published'
+                       && request.resource.data.createdBy == resource.data.createdBy
+                       && request.resource.data.status in ['draft', 'pending'])
+                    );
+
+      allow delete: if isSignedIn() && (
+                      isAdmin() ||
+                      (resource.data.createdBy == request.auth.uid && resource.data.status != 'published')
+                    );
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
