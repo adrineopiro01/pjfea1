@@ -215,24 +215,28 @@ function navigateTo(hash){
   if(location.hash===hash){routeFromHash();}else{location.hash=hash;}
 }
 
+// Each menu item is one .page. A hash can also name a section inside a page (e.g. #awards),
+// which opens that page and scrolls to the section.
 function showRoute(key){
-  if(!key)key='hero';
-  let matched=false;
-  pages.forEach(p=>{
-    const routeKey=p.dataset.route||p.id;
-    const isMatch=routeKey===key;
-    p.classList.toggle('active',isMatch);
-    if(isMatch)matched=true;
-  });
-  if(!matched){
-    key='hero';
-    pages.forEach(p=>p.classList.toggle('active',(p.dataset.route||p.id)==='hero'));
+  const routeOf=p=>p.dataset.route||p.id;
+  let page=[...pages].find(p=>routeOf(p)===key);
+  let target=null;
+  if(!page&&key){
+    target=document.getElementById(key);
+    page=target&&target.closest('.page');
   }
-  sidebarLinks.forEach(a=>a.classList.toggle('active',a.getAttribute('href')==='#'+key));
-  dashboardMain.scrollTop=0;
-  window.scrollTo(0,0);
+  if(!page)page=[...pages].find(p=>routeOf(p)==='hero');
+  pages.forEach(p=>p.classList.toggle('active',p===page));
+  const route=routeOf(page);
+  sidebarLinks.forEach(a=>a.classList.toggle('active',a.getAttribute('href')==='#'+route));
   closeSidebar();
-  if(key==='newsroom')renderNewsroom();
+  if(target){
+    target.scrollIntoView();
+  }else{
+    dashboardMain.scrollTop=0;
+    window.scrollTo(0,0);
+  }
+  if(page.querySelector('#newsroomGrid'))renderNewsroom();
 }
 
 function routeFromHash(){
