@@ -8,10 +8,19 @@
 <meta property="og:description" content="Shifting Narratives. Building Peace. Amplifying Grassroots Voices.">
 <meta property="og:url" content="https://pjfea.org">
 <title>Peace Journalism Foundation East Africa | pjfea.org</title>
+<script>
+// On index.html/admin, resolve relative assets (style.css, script.js) from the site root, not from "index.html/".
+if(/\/index\.html\/admin\/?$/.test(location.pathname)){var b=document.createElement('base');b.href=location.pathname.replace(/index\.html\/admin\/?$/,'');document.head.appendChild(b);}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<script>
+(function(){var t;try{t=localStorage.getItem('pjfea-theme');}catch(e){}
+if(t!=='light'&&t!=='dark'){t=window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}
+document.documentElement.setAttribute('data-theme',t);})();
+</script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
@@ -41,7 +50,22 @@ firebase.initializeApp(firebaseConfig);
       </div>
     </a>
   </div>
-  <a href="#donate" class="btn-donate-nav">Donate</a>
+  <div class="topbar-right">
+    <div class="settings-wrap">
+      <button class="settings-btn" id="settingsBtn" aria-label="Settings" aria-haspopup="true" aria-expanded="false" aria-controls="settingsMenu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+      <div class="settings-menu" id="settingsMenu" hidden>
+        <div class="settings-menu-label" id="themeLabel">Appearance</div>
+        <div class="theme-options" role="radiogroup" aria-labelledby="themeLabel">
+          <button class="theme-option" role="radio" aria-checked="false" data-theme-choice="light"><span class="theme-option-icon" aria-hidden="true">☀️</span>Light</button>
+          <button class="theme-option" role="radio" aria-checked="false" data-theme-choice="dark"><span class="theme-option-icon" aria-hidden="true">🌙</span>Dark</button>
+          <button class="theme-option" role="radio" aria-checked="false" data-theme-choice="system"><span class="theme-option-icon" aria-hidden="true">💻</span>System</button>
+        </div>
+      </div>
+    </div>
+    <a href="#donate" class="btn-donate-nav">Donate</a>
+  </div>
 </div>
 
 <!-- SIDEBAR -->
@@ -63,8 +87,6 @@ firebase.initializeApp(firebaseConfig);
   <a href="#partners" class="sidebar-link"><span class="sidebar-icon" aria-hidden="true">🤝</span>Partners</a>
   <div class="sidebar-group-label">Support</div>
   <a href="#donate" class="sidebar-link"><span class="sidebar-icon" aria-hidden="true">💝</span>Donate</a>
-  <div class="sidebar-group-label">Staff</div>
-  <a href="#admin" class="sidebar-link"><span class="sidebar-icon" aria-hidden="true">🔐</span>Admin</a>
 </aside>
 
 <main class="dashboard-main" id="dashboardMain">
@@ -757,7 +779,7 @@ firebase.initializeApp(firebaseConfig);
             <div class="form-field"><label for="st-impactCountries">Countries reached</label><input type="text" id="st-impactCountries"></div>
             <div class="form-field"><label for="st-impactYears">Years of impact</label><input type="text" id="st-impactYears"></div>
           </div>
-          <div id="settingsFormMsg" class="form-error" style="display:none;color:var(--green);"></div>
+          <div id="settingsFormMsg" class="form-error" style="display:none;color:var(--green-text);"></div>
           <button type="submit" class="btn-primary" style="margin-top:0.5rem;">Save Site Settings</button>
         </form>
       </div>

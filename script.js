@@ -295,7 +295,7 @@ function renderArticleFull(id){
   bodyEl.innerHTML=`
     <div style="margin-bottom:2rem;">
       <span class="article-category">${escapeHtml(article.category||'Story')}${article.tag?' · '+escapeHtml(article.tag):''}</span>
-      <h1 style="font-family:var(--serif);font-size:2.2rem;font-weight:700;color:var(--blue);line-height:1.2;margin:1rem 0;">${escapeHtml(article.title)}</h1>
+      <h1 style="font-family:var(--serif);font-size:2.2rem;font-weight:700;color:var(--heading);line-height:1.2;margin:1rem 0;">${escapeHtml(article.title)}</h1>
       <div style="font-size:13px;color:var(--gray-mid);margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:1px solid var(--gray-light);">
         By <strong>${escapeHtml(article.author)}</strong> &nbsp;·&nbsp; PJF East Africa &nbsp;·&nbsp; ${escapeHtml(article.dateLabel||formatDateLabel(article.date))}${article.readTime?' &nbsp;·&nbsp; '+escapeHtml(article.readTime):''}
       </div>
@@ -306,11 +306,11 @@ function renderArticleFull(id){
     <div style="margin-top:2.5rem;padding-top:2rem;border-top:1px solid var(--gray-light);">
       <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--gray-mid);margin-bottom:0.75rem;">Follow PJF East Africa</div>
       <div style="display:flex;gap:1rem;flex-wrap:wrap;">
-        <a href="https://x.com/pjfeastafrica" target="_blank" style="font-size:13px;color:var(--blue);font-weight:600;">𝕏 @Pjfeastafrica</a>
-        <a href="https://www.facebook.com/share/r/183iTn64gK/" target="_blank" style="font-size:13px;color:var(--blue);font-weight:600;">Facebook</a>
-        <a href="https://bsky.app/profile/peace-journalism.bsky.social" target="_blank" style="font-size:13px;color:var(--blue);font-weight:600;">Bluesky</a>
+        <a href="https://x.com/pjfeastafrica" target="_blank" style="font-size:13px;color:var(--heading);font-weight:600;">𝕏 @Pjfeastafrica</a>
+        <a href="https://www.facebook.com/share/r/183iTn64gK/" target="_blank" style="font-size:13px;color:var(--heading);font-weight:600;">Facebook</a>
+        <a href="https://bsky.app/profile/peace-journalism.bsky.social" target="_blank" style="font-size:13px;color:var(--heading);font-weight:600;">Bluesky</a>
       </div>
-      <div style="margin-top:0.75rem;font-size:13px;color:var(--gray-mid);">Email: <a href="mailto:peacejournalismfoundation@gmail.com" style="color:var(--blue);">peacejournalismfoundation@gmail.com</a></div>
+      <div style="margin-top:0.75rem;font-size:13px;color:var(--gray-mid);">Email: <a href="mailto:peacejournalismfoundation@gmail.com" style="color:var(--heading);">peacejournalismfoundation@gmail.com</a></div>
     </div>`;
   sideEl.innerHTML=`
     <div class="sidebar-author">
@@ -519,7 +519,7 @@ function renderAdminArticleList(){
     </div>`;
   }).join('');
 }
-function previewArticle(id){location.hash='#article-full:'+id;}
+function previewArticle(id){navigateTo('#article-full:'+id);}
 async function setArticleStatus(id,status){
   try{
     await db.collection('articles').doc(id).update({status,updatedAt:new Date().toISOString()});
@@ -742,6 +742,15 @@ function closeSidebar(){sidebarEl.classList.remove('open');sidebarOverlay.classL
 sidebarToggle.addEventListener('click',()=>{sidebarEl.classList.contains('open')?closeSidebar():openSidebar();});
 sidebarOverlay.addEventListener('click',closeSidebar);
 
+// The admin page is only reachable at index.html/admin (Live Server serves index.html for it), never via #admin.
+const IS_ADMIN_PATH=/\/index\.html\/admin\/?$/.test(location.pathname);
+const MAIN_PATH=location.pathname.replace(/\/admin\/?$/,'');
+
+function navigateTo(hash){
+  if(IS_ADMIN_PATH){location.href=MAIN_PATH+hash;return;}
+  if(location.hash===hash){routeFromHash();}else{location.hash=hash;}
+}
+
 function showRoute(rawKey){
   let key=rawKey;
   let subId=null;
@@ -751,6 +760,8 @@ function showRoute(rawKey){
     subId=parts.slice(1).join(':');
   }
   if(!key)key='hero';
+  if(key==='admin')key='hero';
+  if(IS_ADMIN_PATH)key='admin';
   let matched=false;
   pages.forEach(p=>{
     const routeKey=p.dataset.route||p.id;
@@ -771,17 +782,57 @@ function showRoute(rawKey){
   if(key==='admin')checkSession();
 }
 
-function routeFromHash(){showRoute(location.hash.slice(1));}
+function routeFromHash(){
+  if(IS_ADMIN_PATH&&location.hash.length>1){location.href=MAIN_PATH+location.hash;return;}
+  showRoute(location.hash.slice(1));
+}
 
 document.querySelectorAll('a[href^="#"]').forEach(a=>{
   a.addEventListener('click',e=>{
     const href=a.getAttribute('href');
     if(href.length>1){
       e.preventDefault();
-      if(location.hash===href){routeFromHash();}else{location.hash=href;}
+      navigateTo(href);
     }
   });
 });
 
 window.addEventListener('hashchange',routeFromHash);
 routeFromHash();
+// THEME SETTINGS
+(function(){
+  const KEY='pjfea-theme';
+  const btn=document.getElementById('settingsBtn');
+  const menu=document.getElementById('settingsMenu');
+  const options=menu.querySelectorAll('[data-theme-choice]');
+  const media=window.matchMedia('(prefers-color-scheme: dark)');
+
+  function getChoice(){
+    try{const t=localStorage.getItem(KEY);if(t==='light'||t==='dark')return t;}catch(e){}
+    return 'system';
+  }
+  function applyTheme(choice){
+    const theme=choice==='system'?(media.matches?'dark':'light'):choice;
+    document.documentElement.setAttribute('data-theme',theme);
+    options.forEach(o=>o.setAttribute('aria-checked',String(o.dataset.themeChoice===choice)));
+  }
+  function setChoice(choice){
+    try{
+      if(choice==='system')localStorage.removeItem(KEY);
+      else localStorage.setItem(KEY,choice);
+    }catch(e){}
+    applyTheme(choice);
+  }
+  function toggleMenu(open){
+    menu.hidden=!open;
+    btn.setAttribute('aria-expanded',String(open));
+  }
+
+  btn.addEventListener('click',e=>{e.stopPropagation();toggleMenu(menu.hidden);});
+  options.forEach(o=>o.addEventListener('click',()=>setChoice(o.dataset.themeChoice)));
+  document.addEventListener('click',e=>{if(!menu.hidden&&!menu.contains(e.target))toggleMenu(false);});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!menu.hidden){toggleMenu(false);btn.focus();}});
+  media.addEventListener('change',()=>{if(getChoice()==='system')applyTheme('system');});
+
+  applyTheme(getChoice());
+})();
