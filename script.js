@@ -48,34 +48,42 @@ function updateCountdown(){
 updateCountdown();
 setInterval(updateCountdown,60000);
 
-function handleNewsletter(e){
+async function handleNewsletter(e){
   e.preventDefault();
+  const input=e.target.querySelector('input');
+  const {error}=await sb.from('subscribers').insert({email:input.value.trim().toLowerCase()});
+  // 23505 = already subscribed, which is fine.
+  if(error&&error.code!=='23505'){alert('Sorry, we could not subscribe you right now. Please try again later.');return false;}
   alert('Thank you for subscribing! We will add you to our mailing list.');
-  e.target.querySelector('input').value='';
+  input.value='';
   return false;
 }
 
 
-/* ================== CONTENT ADMIN (Firebase-backed CMS) ================== */
-const auth=firebase.auth();
-const db=firebase.firestore();
+/* ================== CONTENT ADMIN (Supabase-backed CMS) ================== */
 let articlesCache=[];
-let publishedArticles=[];
-let mineArticles=[];
 let settingsCache={};
 let currentProfile=null; // {uid,email,name,role} while signed in, else null
 let currentArticleSubId=null;
-let unsubPublished=null;
-let unsubMine=null;
-let unsubSettings=null;
-function rebuildArticlesCache(){
-  const map=new Map();
-  publishedArticles.forEach(a=>map.set(a.id,a));
-  mineArticles.forEach(a=>map.set(a.id,a));
-  articlesCache=Array.from(map.values());
+// Database columns are snake_case; the page works with camelCase objects.
+function camelKeys(r){const a={};Object.keys(r).forEach(k=>{a[k.replace(/_([a-z])/g,(m,c)=>c.toUpperCase())]=r[k];});return a;}
+function snakeKeys(a){const r={};Object.keys(a).forEach(k=>{r[k.replace(/[A-Z]/g,c=>'_'+c.toLowerCase())]=a[k];});return r;}
+// Row Level Security decides what comes back: published articles for everyone,
+// plus your own drafts (editors) or everything (admins).
+async function loadArticles(){
+  const {data,error}=await sb.from('articles').select('*');
+  if(error){console.error('Could not load articles:',error);return;}
+  articlesCache=data.map(camelKeys);
   renderNewsroom();
   renderAdminArticleList();
   if(document.getElementById('articleFullBody'))renderArticleFull(currentArticleSubId);
+}
+async function loadSettings(){
+  const {data,error}=await sb.from('settings').select('data').eq('id','site').maybeSingle();
+  if(error){console.error('Could not load settings:',error);return;}
+  settingsCache=data?data.data:{};
+  applySettingsToPage();
+  loadSettingsIntoForm();
 }
 function escapeHtml(s){
   return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -196,28 +204,22 @@ const SEED_ARTICLE = {"id": "seed-emmanuella", "title": "South Sudan's Lens of H
 
 async function seedIfEmptyForAdmin(){
   try{
-    const settingsRef=db.collection('settings').doc('site');
-    const settingsSnap=await settingsRef.get();
-    if(!settingsSnap.exists){
-      await settingsRef.set({
-        heroEyebrow:'East Africa · Founded 2014',
-        heroHeadline:'Promoting Peace Through <em>Responsible Journalism</em> Across East Africa',
-        heroSub:'Shifting narratives. Building peace. Amplifying grassroots voices in communities where stories matter most.',
-        statFounded:'2014',statCountries:'7',statPartnerships:'50+',
-        impactTrained:'800',impactMedia:'60',impactCountries:'7',impactYears:'12',
-        articlesSeeded:true
-      });
-      const seed=Object.assign({},SEED_ARTICLE);
-      delete seed.id;
-      seed.createdBy=currentProfile.uid;
-      seed.createdByName=currentProfile.name||currentProfile.email;
-      seed.updatedAt=new Date().toISOString();
-      await db.collection('articles').add(seed);
-    }else if(!settingsSnap.data().articlesSeeded){
-      // Site already existed before this flag was introduced — mark it seeded
-      // without re-adding the demo article, so deleted articles stay deleted.
-      await settingsRef.set({articlesSeeded:true},{merge:true});
-    }
+    const {data:existing,error}=await sb.from('settings').select('id').eq('id','site').maybeSingle();
+    if(error)throw error;
+    if(existing)return;
+    const {error:sErr}=await sb.from('settings').insert({id:'site',data:{
+      heroEyebrow:'East Africa · Founded 2014',
+      heroSub:'Shifting narratives. Building peace. Amplifying grassroots voices in communities where stories matter most.',
+      statFounded:'2014',statCountries:'7',statPartnerships:'50+',
+      impactTrained:'800',impactMedia:'60',impactCountries:'7',impactYears:'12'
+    }});
+    if(sErr)throw sErr;
+    const seed=Object.assign({},SEED_ARTICLE);
+    delete seed.id;
+    seed.createdBy=currentProfile.uid;
+    seed.createdByName=currentProfile.name||currentProfile.email;
+    const {error:aErr}=await sb.from('articles').insert(snakeKeys(seed));
+    if(aErr)throw aErr;
   }catch(ex){
     console.error('Seeding failed:',ex);
   }
@@ -226,7 +228,6 @@ async function seedIfEmptyForAdmin(){
 function applySettingsToPage(){
   const s=settingsCache||{};
   const eyebrow=document.querySelector('.hero-eyebrow');if(eyebrow&&s.heroEyebrow)eyebrow.textContent=s.heroEyebrow;
-  const hl=document.querySelector('.hero-headline');if(hl&&s.heroHeadline)hl.innerHTML=s.heroHeadline;
   const sub=document.querySelector('.hero-sub');if(sub&&s.heroSub)sub.textContent=s.heroSub;
   const statNums=document.querySelectorAll('#about .stat-num');
   if(statNums[0]&&s.statFounded)statNums[0].textContent=s.statFounded;
@@ -342,19 +343,37 @@ async function handleAdminLogin(e){
   const err=document.getElementById('loginError');
   const btn=document.getElementById('adminLoginForm').querySelector('button[type=submit]');
   btn.disabled=true;
-  try{
-    await auth.signInWithEmailAndPassword(email,password);
-    err.style.display='none';
-    document.getElementById('adminLoginForm').reset();
-  }catch(ex){
+  const {error}=await sb.auth.signInWithPassword({email,password});
+  if(error){
     err.textContent='Invalid email or password.';
     err.style.display='block';
+  }else{
+    err.style.display='none';
+    document.getElementById('adminLoginForm').reset();
   }
   btn.disabled=false;
   return false;
 }
 function handleAdminLogout(){
-  auth.signOut();
+  sb.auth.signOut();
+}
+function toggleChangePassword(show){
+  const f=document.getElementById('changePwForm');
+  f.hidden=!show;
+  document.getElementById('changePwMsg').style.display='none';
+  if(show){f.reset();document.getElementById('cp-new').focus();}
+}
+async function handleChangePassword(e){
+  e.preventDefault();
+  const pw=document.getElementById('cp-new').value;
+  const msg=document.getElementById('changePwMsg');
+  msg.style.color='#B91C1C';
+  if(pw!==document.getElementById('cp-confirm').value){msg.textContent='Passwords do not match.';msg.style.display='block';return false;}
+  const {error}=await sb.auth.updateUser({password:pw});
+  if(error){msg.textContent=error.message;msg.style.display='block';return false;}
+  msg.style.color='var(--green-text)';msg.textContent='Password changed.';msg.style.display='block';
+  setTimeout(()=>toggleChangePassword(false),1500);
+  return false;
 }
 function checkSession(){
   const outEl=document.getElementById('adminLoggedOut');
@@ -382,63 +401,56 @@ function applyRoleVisibility(){
 }
 function switchAdminTab(tab){
   if(!currentProfile)return;
-  if((tab==='settings'||tab==='users')&&currentProfile.role!=='admin')tab='articles';
+  if((tab==='settings'||tab==='users'||tab==='donations')&&currentProfile.role!=='admin')tab='articles';
   if(!tab)tab='articles';
   document.querySelectorAll('.admin-tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
   document.querySelectorAll('.admin-panel').forEach(p=>p.classList.toggle('active',p.id==='panel-'+tab));
   if(tab==='articles')renderAdminArticleList();
   if(tab==='settings')loadSettingsIntoForm();
   if(tab==='users')renderUserList();
+  if(tab==='donations')renderDonationList();
 }
-function getSecondaryAuth(){
-  let secondaryApp=firebase.apps.find(a=>a.name==='Secondary');
-  if(!secondaryApp)secondaryApp=firebase.initializeApp(firebaseConfig,'Secondary');
-  return secondaryApp.auth();
-}
-auth.onAuthStateChanged(async(user)=>{
-  if(unsubPublished){unsubPublished();unsubPublished=null;}
-  if(unsubMine){unsubMine();unsubMine=null;}
-  if(unsubSettings){unsubSettings();unsubSettings=null;}
-  mineArticles=[];
+async function handleSession(session){
+  const user=session&&session.user;
   if(user){
-    let profileData={role:'editor',name:user.email,email:user.email};
-    try{
-      const snap=await db.collection('profiles').doc(user.uid).get();
-      if(snap.exists)profileData=Object.assign({},snap.data(),{email:user.email});
-    }catch(ex){console.error('Could not load profile:',ex);}
-    currentProfile={uid:user.uid,email:user.email,name:profileData.name,role:profileData.role};
-    if(currentProfile.role==='admin')await seedIfEmptyForAdmin();
+    const {data:profile,error}=await sb.from('profiles').select('*').eq('id',user.id).maybeSingle();
+    if(error)console.error('Could not load profile:',error);
+    if(profile){
+      currentProfile={uid:user.id,email:user.email,name:profile.name,role:profile.role};
+      if(currentProfile.role==='admin')await seedIfEmptyForAdmin();
+    }else{
+      // A login without a staff profile gets no access at all.
+      currentProfile=null;
+      const err=document.getElementById('loginError');
+      if(err){err.textContent='This account is not on the staff list. Ask an admin to add you.';err.style.display='block';}
+      await sb.auth.signOut();
+      return;
+    }
   }else{
     currentProfile=null;
   }
-
-  // Published articles are readable by everyone (logged in or not) — a query
-  // Firestore can prove is safe because the where() clause matches the rule.
-  unsubPublished=db.collection('articles').where('status','==','published').onSnapshot(snap=>{
-    publishedArticles=snap.docs.map(d=>Object.assign({id:d.id},d.data()));
-    rebuildArticlesCache();
-  },err=>console.error('published articles listener error:',err));
-
-  // Drafts/pending are only visible to their owner (or everything, for admin).
-  if(currentProfile&&currentProfile.role==='admin'){
-    unsubMine=db.collection('articles').onSnapshot(snap=>{
-      mineArticles=snap.docs.map(d=>Object.assign({id:d.id},d.data()));
-      rebuildArticlesCache();
-    },err=>console.error('admin articles listener error:',err));
-  }else if(currentProfile){
-    unsubMine=db.collection('articles').where('createdBy','==',currentProfile.uid).onSnapshot(snap=>{
-      mineArticles=snap.docs.map(d=>Object.assign({id:d.id},d.data()));
-      rebuildArticlesCache();
-    },err=>console.error('own articles listener error:',err));
-  }
-
-  unsubSettings=db.collection('settings').doc('site').onSnapshot(snap=>{
-    settingsCache=snap.exists?snap.data():{};
-    applySettingsToPage();
-    loadSettingsIntoForm();
-  },err=>console.error('settings listener error:',err));
+  await Promise.all([loadArticles(),loadSettings()]);
   checkSession();
+}
+let lastSessionUserId;
+sb.auth.onAuthStateChange((event,session)=>{
+  const uid=session&&session.user?session.user.id:null;
+  // Token refreshes and tab re-focus re-fire events for the same user; only react to real changes.
+  if(event!=='INITIAL_SESSION'&&uid===lastSessionUserId)return;
+  lastSessionUserId=uid;
+  // Supabase advises against awaiting its own calls inside this callback.
+  setTimeout(()=>handleSession(session),0);
 });
+// Refresh open pages when articles or settings change elsewhere.
+const reloadTimers={};
+function scheduleReload(what){
+  clearTimeout(reloadTimers[what]);
+  reloadTimers[what]=setTimeout(what==='articles'?loadArticles:loadSettings,300);
+}
+sb.channel('content-changes')
+  .on('postgres_changes',{event:'*',schema:'public',table:'articles'},()=>scheduleReload('articles'))
+  .on('postgres_changes',{event:'*',schema:'public',table:'settings'},()=>scheduleReload('settings'))
+  .subscribe();
 
 /* ---- Articles admin ---- */
 let pendingPhotoData=null;
@@ -521,19 +533,15 @@ function renderAdminArticleList(){
 }
 function previewArticle(id){navigateTo('#article-full:'+id);}
 async function setArticleStatus(id,status){
-  try{
-    await db.collection('articles').doc(id).update({status,updatedAt:new Date().toISOString()});
-  }catch(ex){
-    alert('Could not update the article: '+ex.message);
-  }
+  const {data,error}=await sb.from('articles').update({status}).eq('id',id).select('id');
+  if(error||!data.length)alert('Could not update the article: '+(error?error.message:'not allowed.'));
+  loadArticles();
 }
 async function deleteArticle(id){
   if(!confirm('Delete this article? This cannot be undone.'))return;
-  try{
-    await db.collection('articles').doc(id).delete();
-  }catch(ex){
-    alert('Could not delete the article: '+ex.message);
-  }
+  const {data,error}=await sb.from('articles').delete().eq('id',id).select('id');
+  if(error||!data.length)alert('Could not delete the article: '+(error?error.message:'not allowed.'));
+  loadArticles();
 }
 function loadArticleIntoForm(id){
   const a=articlesCache.find(x=>x.id===id);
@@ -582,14 +590,13 @@ async function handleArticleSubmit(e){
     category:document.getElementById('af-category').value.trim(),
     tag:document.getElementById('af-tag').value.trim(),
     excerpt:document.getElementById('af-excerpt').value.trim(),
-    body,status,
-    updatedAt:now.toISOString()
+    body,status
   };
   if(pendingPhotoData)docData.photo=pendingPhotoData;
 
   const approxSize=new Blob([JSON.stringify(docData)]).size;
-  if(approxSize>900*1024){
-    err.textContent='This article is too large to save (photos/body too big — Firestore caps each article at 1MB). Try a smaller photo or fewer inline images.';
+  if(approxSize>2*1024*1024){
+    err.textContent='This article is too large to save (over 2MB, usually from photos). Try a smaller photo or fewer inline images.';
     err.style.display='block';
     return false;
   }
@@ -602,7 +609,9 @@ async function handleArticleSubmit(e){
       const existing=articlesCache.find(x=>x.id===id);
       if(!existing)throw new Error('Article not found.');
       if(currentProfile.role!=='admin'&&existing.createdBy!==currentProfile.uid)throw new Error('Not allowed.');
-      await db.collection('articles').doc(id).update(docData);
+      const {data,error}=await sb.from('articles').update(snakeKeys(docData)).eq('id',id).select('id');
+      if(error)throw error;
+      if(!data.length)throw new Error('Not allowed.');
     }else{
       docData.date=now.toISOString().slice(0,10);
       docData.dateLabel=now.toLocaleDateString('en-US',{month:'long',year:'numeric'});
@@ -610,8 +619,10 @@ async function handleArticleSubmit(e){
       docData.createdBy=currentProfile.uid;
       docData.createdByName=currentProfile.name||currentProfile.email;
       if(!docData.photo)docData.photo=null;
-      await db.collection('articles').add(docData);
+      const {error}=await sb.from('articles').insert(snakeKeys(docData));
+      if(error)throw error;
     }
+    await loadArticles();
     resetArticleForm();
     switchAdminTab('articles');
   }catch(ex){
@@ -625,7 +636,7 @@ async function handleArticleSubmit(e){
 /* ---- Site settings admin ---- */
 function loadSettingsIntoForm(){
   const s=settingsCache||{};
-  const map={heroEyebrow:'st-heroEyebrow',heroHeadline:'st-heroHeadline',heroSub:'st-heroSub',
+  const map={heroEyebrow:'st-heroEyebrow',heroSub:'st-heroSub',
     statFounded:'st-statFounded',statCountries:'st-statCountries',statPartnerships:'st-statPartnerships',
     impactTrained:'st-impactTrained',impactMedia:'st-impactMedia',impactCountries:'st-impactCountries',impactYears:'st-impactYears'};
   Object.keys(map).forEach(k=>{const el=document.getElementById(map[k]);if(el)el.value=s[k]!==undefined?s[k]:'';});
@@ -635,7 +646,6 @@ async function handleSettingsSubmit(e){
   if(!currentProfile||currentProfile.role!=='admin')return false;
   const s={
     heroEyebrow:document.getElementById('st-heroEyebrow').value,
-    heroHeadline:document.getElementById('st-heroHeadline').value,
     heroSub:document.getElementById('st-heroSub').value,
     statFounded:document.getElementById('st-statFounded').value,
     statCountries:document.getElementById('st-statCountries').value,
@@ -647,7 +657,10 @@ async function handleSettingsSubmit(e){
   };
   const msg=document.getElementById('settingsFormMsg');
   try{
-    await db.collection('settings').doc('site').set(s);
+    const {error}=await sb.from('settings').upsert({id:'site',data:s});
+    if(error)throw error;
+    settingsCache=s;
+    applySettingsToPage();
     msg.style.color='var(--green)';
     msg.textContent='Saved. Homepage updated.';
     msg.style.display='block';
@@ -667,34 +680,78 @@ async function renderUserList(){
   if(!listEl)return;
   listEl.innerHTML='<p style="color:var(--gray-mid);font-size:13px;">Loading…</p>';
   try{
-    const snap=await db.collection('profiles').get();
-    const users=snap.docs.map(d=>Object.assign({uid:d.id},d.data()));
+    const {data:users,error}=await sb.from('profiles').select('*').order('created_at');
+    if(error)throw error;
     listEl.innerHTML=users.map(u=>`
       <div class="user-row">
         <div><strong>${escapeHtml(u.name||'')}</strong> &nbsp;·&nbsp; ${escapeHtml(u.email||'')} <span class="status-badge ${u.role==='admin'?'published':'pending'}">${escapeHtml(u.role)}</span></div>
         <div>
-          <button type="button" class="btn-sm" onclick="resetUserPassword('${escapeHtml(u.email||'')}')">Send Password Reset</button>
-          ${u.role==='editor'?`<button type="button" class="btn-sm danger" onclick="removeUser('${u.uid}','${escapeHtml(u.email||'')}')">Remove</button>`:''}
+          ${u.role==='editor'?`<button type="button" class="btn-sm" onclick="setUserPassword('${u.id}','${escapeHtml(u.email||'')}')">Set Temporary Password</button>
+          <button type="button" class="btn-sm danger" onclick="removeUser('${u.id}','${escapeHtml(u.email||'')}')">Remove</button>`:''}
         </div>
       </div>`).join('');
   }catch(ex){
     listEl.innerHTML='<p class="form-error" style="display:block;">Could not load staff list: '+escapeHtml(ex.message)+'</p>';
   }
 }
-async function resetUserPassword(email){
-  if(!email)return;
-  if(!confirm('Send a password reset email to '+email+'?'))return;
+/* ---- Donations admin (read-only; records are written by the /api functions) ---- */
+function formatMoney(amount,currency){
+  const n=Number(amount)||0;
+  return currency==='UGX'?'USh '+n.toLocaleString('en-UG',{maximumFractionDigits:0}):'$'+n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2});
+}
+async function renderDonationList(){
+  if(!currentProfile||currentProfile.role!=='admin')return;
+  const listEl=document.getElementById('donationList');
+  const totalsEl=document.getElementById('donationTotals');
+  if(!listEl)return;
+  const showAll=document.getElementById('donationShowAll').checked;
+  listEl.innerHTML='<p style="color:var(--gray-mid);font-size:13px;">Loading…</p>';
   try{
-    await auth.sendPasswordResetEmail(email);
-    alert('Password reset email sent to '+email+'.');
+    const {data:rows0,error}=await sb.from('donations').select('*').order('created_at',{ascending:false}).limit(200);
+    if(error)throw error;
+    const all=rows0.map(camelKeys);
+    const totals={};
+    all.filter(d=>d.status==='paid').forEach(d=>{const c=d.paidCurrency||d.currency;totals[c]=(totals[c]||0)+Number(d.paidAmount||d.amount||0);});
+    totalsEl.innerHTML=Object.keys(totals).length
+      ?'Received: '+Object.keys(totals).map(c=>'<strong>'+formatMoney(totals[c],c)+'</strong>').join(' &nbsp;·&nbsp; ')
+      :'No completed donations yet.';
+    const rows=showAll?all:all.filter(d=>d.status==='paid');
+    if(!rows.length){listEl.innerHTML='<p style="color:var(--gray-mid);font-size:13px;">Nothing to show.</p>';return;}
+    const badge={paid:'published',pending:'pending'};
+    listEl.innerHTML=rows.map(d=>{
+      const when=d.createdAt?new Date(d.createdAt).toLocaleString():'';
+      return `<div class="user-row">
+        <div><strong>${escapeHtml(formatMoney(d.paidAmount||d.amount,d.paidCurrency||d.currency))}</strong> &nbsp;·&nbsp; ${escapeHtml(d.fundName||'')}${d.frequency==='monthly'?' (monthly)':''}
+          <span class="status-badge ${badge[d.status]||'draft'}">${escapeHtml(d.status||'')}</span><br>
+          <span style="font-size:12.5px;color:var(--gray-mid);">${escapeHtml(d.donorName||'')} · ${escapeHtml(d.donorEmail||'')}${d.donorPhone?' · '+escapeHtml(d.donorPhone):''}</span></div>
+        <div style="font-size:12px;color:var(--gray-mid);text-align:right;">${escapeHtml(when)}<br>${escapeHtml(d.paymentType||'')}</div>
+      </div>`;}).join('');
   }catch(ex){
-    alert('Could not send reset email: '+ex.message);
+    listEl.innerHTML='<p class="form-error" style="display:block;">Could not load donations: '+escapeHtml(ex.message)+'</p>';
   }
 }
-async function removeUser(uid,email){
-  if(!confirm('Remove "'+email+'" from the staff list? This does NOT delete their login — to fully block their access, disable or delete their account in the Firebase Console under Authentication → Users.'))return;
+// Creating, deleting and re-passwording logins needs the service-role key, so it runs in api/admin-users.js.
+async function staffApi(method,body){
+  const {data:{session}}=await sb.auth.getSession();
+  const res=await fetch('/api/admin-users',{method,headers:{'Content-Type':'application/json',Authorization:'Bearer '+(session?session.access_token:'')},body:JSON.stringify(body)});
+  const data=await res.json().catch(()=>({}));
+  if(!res.ok)throw new Error(data.error||'Request failed ('+res.status+').');
+  return data;
+}
+async function setUserPassword(id,email){
+  const pw=prompt('New temporary password for '+email+' (at least 8 characters). Share it with them privately; they can change it after signing in.');
+  if(!pw)return;
   try{
-    await db.collection('profiles').doc(uid).delete();
+    await staffApi('PATCH',{id,password:pw});
+    alert('Password updated for '+email+'.');
+  }catch(ex){
+    alert('Could not update password: '+ex.message);
+  }
+}
+async function removeUser(id,email){
+  if(!confirm('Remove "'+email+'"? This deletes their login; their articles stay.'))return;
+  try{
+    await staffApi('DELETE',{id});
     renderUserList();
   }catch(ex){
     alert('Could not remove: '+ex.message);
@@ -703,18 +760,15 @@ async function removeUser(uid,email){
 async function handleAddUser(e){
   e.preventDefault();
   if(!currentProfile||currentProfile.role!=='admin')return false;
-  const name=document.getElementById('nu-name').value.trim();
-  const email=document.getElementById('nu-email').value.trim();
-  const password=document.getElementById('nu-password').value;
   const err=document.getElementById('userFormError');
   const submitBtn=document.getElementById('userForm').querySelector('button[type=submit]');
   submitBtn.disabled=true;
   try{
-    const secAuth=getSecondaryAuth();
-    const cred=await secAuth.createUserWithEmailAndPassword(email,password);
-    const uid=cred.user.uid;
-    await secAuth.signOut();
-    await db.collection('profiles').doc(uid).set({name,email,role:'editor'});
+    await staffApi('POST',{
+      name:document.getElementById('nu-name').value.trim(),
+      email:document.getElementById('nu-email').value.trim(),
+      password:document.getElementById('nu-password').value
+    });
     err.style.display='none';
     document.getElementById('userForm').reset();
     renderUserList();
@@ -743,15 +797,19 @@ sidebarToggle.addEventListener('click',()=>{sidebarEl.classList.contains('open')
 sidebarOverlay.addEventListener('click',closeSidebar);
 
 // The admin page is only reachable at index.html/admin (Live Server serves index.html for it), never via #admin.
-const IS_ADMIN_PATH=/\/index\.html\/admin\/?$/.test(location.pathname);
-const MAIN_PATH=location.pathname.replace(/\/admin\/?$/,'');
+function isAdminPath(){return /\/index\.html\/admin\/?$/.test(location.pathname);}
+function mainPath(){return location.pathname.replace(/\/admin\/?$/,'');}
+function adminPath(){const p=location.pathname;return p.endsWith('/')?p+'index.html/admin':p+'/admin';}
+
+// Switch URLs in the browser (no page load), so the server never has to resolve index.html/admin on click.
+function setPath(url){try{history.pushState(null,'',url);}catch(e){}}
 
 function navigateTo(hash){
-  if(IS_ADMIN_PATH){location.href=MAIN_PATH+hash;return;}
+  if(isAdminPath()){setPath(mainPath()+hash);routeFromHash();return;}
   if(location.hash===hash){routeFromHash();}else{location.hash=hash;}
 }
 
-function showRoute(rawKey){
+function showRoute(rawKey,fromAdminLink){
   let key=rawKey;
   let subId=null;
   if(key && key.includes(':')){
@@ -760,8 +818,8 @@ function showRoute(rawKey){
     subId=parts.slice(1).join(':');
   }
   if(!key)key='hero';
-  if(key==='admin')key='hero';
-  if(IS_ADMIN_PATH)key='admin';
+  if(key==='admin'&&!fromAdminLink)key='hero';
+  if(isAdminPath())key='admin';
   let matched=false;
   pages.forEach(p=>{
     const routeKey=p.dataset.route||p.id;
@@ -773,7 +831,7 @@ function showRoute(rawKey){
     key='hero';
     pages.forEach(p=>p.classList.toggle('active',(p.dataset.route||p.id)==='hero'));
   }
-  sidebarLinks.forEach(a=>a.classList.toggle('active',a.getAttribute('href')==='#'+key));
+  sidebarLinks.forEach(a=>a.classList.toggle('active',a.hasAttribute('data-admin-link')?key==='admin':a.getAttribute('href')==='#'+key));
   dashboardMain.scrollTop=0;
   window.scrollTo(0,0);
   closeSidebar();
@@ -783,7 +841,7 @@ function showRoute(rawKey){
 }
 
 function routeFromHash(){
-  if(IS_ADMIN_PATH&&location.hash.length>1){location.href=MAIN_PATH+location.hash;return;}
+  if(isAdminPath()&&location.hash.length>1){try{history.replaceState(null,'',mainPath()+location.hash);}catch(e){}}
   showRoute(location.hash.slice(1));
 }
 
@@ -797,7 +855,16 @@ document.querySelectorAll('a[href^="#"]').forEach(a=>{
   });
 });
 
+document.querySelectorAll('[data-admin-link]').forEach(a=>{
+  a.addEventListener('click',e=>{
+    e.preventDefault();
+    if(!isAdminPath())setPath(adminPath());
+    showRoute('admin',true);
+  });
+});
+
 window.addEventListener('hashchange',routeFromHash);
+window.addEventListener('popstate',routeFromHash);
 routeFromHash();
 // THEME SETTINGS
 (function(){
@@ -836,3 +903,103 @@ routeFromHash();
 
   applyTheme(getChoice());
 })();
+
+// DONATIONS (checkout runs on Flutterwave; see api/donate.js)
+let donateFund=null;
+let donateLastFocus=null;
+function showDonateView(view){
+  document.getElementById('donateForm').hidden=view!=='form';
+  document.getElementById('donateResult').hidden=view!=='result';
+}
+function openDonateModal(){
+  donateLastFocus=document.activeElement;
+  document.getElementById('donateModal').hidden=false;
+  document.body.style.overflow='hidden';
+}
+function openDonate(btn){
+  const card=btn.closest('.fund-card');
+  const active=card.querySelector('.amount-btn.active');
+  const preset=active?parseFloat(active.textContent.replace(/[^0-9.]/g,'')):NaN;
+  donateFund=btn.dataset.fund;
+  document.getElementById('dn-fundName').textContent=card.querySelector('.fund-name').textContent;
+  document.getElementById('dn-currency').value='USD';
+  onDonateCurrencyChange();
+  document.getElementById('dn-amount').value=isNaN(preset)?'':preset;
+  document.getElementById('dn-error').style.display='none';
+  showDonateView('form');
+  openDonateModal();
+  document.getElementById(isNaN(preset)?'dn-amount':'dn-name').focus();
+}
+function closeDonate(){
+  document.getElementById('donateModal').hidden=true;
+  document.body.style.overflow='';
+  if(donateLastFocus&&donateLastFocus.focus)donateLastFocus.focus();
+}
+function onDonateCurrencyChange(){
+  const ugx=document.getElementById('dn-currency').value==='UGX';
+  const amt=document.getElementById('dn-amount');
+  amt.min=ugx?1000:1;
+  amt.step=ugx?1000:'any';
+  amt.placeholder=ugx?'e.g. 50000':'e.g. 50';
+  amt.value='';
+}
+async function handleDonateSubmit(e){
+  e.preventDefault();
+  const err=document.getElementById('dn-error');
+  const btn=document.getElementById('dn-submit');
+  err.style.display='none';
+  btn.disabled=true;btn.textContent='Connecting to secure checkout…';
+  try{
+    const res=await fetch('/api/donate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      fund:donateFund,
+      currency:document.getElementById('dn-currency').value,
+      amount:document.getElementById('dn-amount').value,
+      frequency:document.querySelector('input[name="dn-frequency"]:checked').value,
+      name:document.getElementById('dn-name').value,
+      email:document.getElementById('dn-email').value,
+      phone:document.getElementById('dn-phone').value
+    })});
+    const data=await res.json().catch(()=>({}));
+    if(!res.ok||!data.link)throw new Error(data.error||'We could not start the payment. Please try again.');
+    location.href=data.link;
+  }catch(ex){
+    err.textContent=ex.message;err.style.display='block';
+    btn.disabled=false;btn.textContent='Continue to secure payment →';
+  }
+  return false;
+}
+function showDonateResult(kind,title,text){
+  document.getElementById('dn-resultIcon').textContent={ok:'🕊️',wait:'⏳',fail:'⚠️'}[kind];
+  document.getElementById('dn-resultTitle').textContent=title;
+  document.getElementById('dn-resultText').textContent=text;
+  showDonateView('result');
+  if(document.getElementById('donateModal').hidden)openDonateModal();
+}
+// Flutterwave sends donors back to /?donation=return&status=…&tx_ref=…&transaction_id=…
+(async function handleDonationReturn(){
+  const p=new URLSearchParams(location.search);
+  if(p.get('donation')!=='return')return;
+  const status=p.get('status'),txRef=p.get('tx_ref'),id=p.get('transaction_id');
+  history.replaceState(null,'',location.pathname+'#donate');
+  routeFromHash();
+  if(status==='cancelled'||!id){
+    showDonateResult('fail','Donation cancelled','No payment was taken. You can try again whenever you are ready.');
+    return;
+  }
+  showDonateResult('wait','Confirming your payment…','This only takes a moment.');
+  try{
+    const res=await fetch('/api/donate-status?transaction_id='+encodeURIComponent(id)+'&tx_ref='+encodeURIComponent(txRef||''));
+    const data=await res.json().catch(()=>({}));
+    if(data.status==='successful'){
+      showDonateResult('ok','Thank you for your gift!','Your donation of '+formatMoney(data.amount,data.currency)+(data.fundName?' to the '+data.fundName:'')+' was received. A receipt has been sent to your email.');
+    }else if(data.status==='failed'){
+      showDonateResult('fail','Payment did not go through','No money was taken. Please try again or use a different payment method.');
+    }else{
+      showDonateResult('wait','Payment is processing','Mobile money payments can take a few minutes to confirm. We will record your gift as soon as it clears — thank you!');
+    }
+  }catch(ex){
+    showDonateResult('wait','Payment is processing','We could not confirm your payment just now, but if it went through it will be recorded automatically. Thank you!');
+  }
+})();
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!document.getElementById('donateModal').hidden)closeDonate();});
+document.getElementById('donateModal').addEventListener('click',e=>{if(e.target.id==='donateModal')closeDonate();});

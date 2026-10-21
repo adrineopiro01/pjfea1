@@ -1,0 +1,14 @@
+{
+  "name": "peace-journalism",
+  "private": true,
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "migrate:firebase": "node scripts/migrate-from-firebase.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.4"
+  },
+  "devDependencies": {
+    "firebase-admin": "^12.6.0"
+  }
+}
