@@ -8,10 +8,6 @@
 <meta property="og:description" content="Shifting Narratives. Building Peace. Amplifying Grassroots Voices.">
 <meta property="og:url" content="https://pjfea.org">
 <title>Peace Journalism Foundation East Africa | pjfea.org</title>
-<script>
-// On index.html/admin, resolve relative assets (style.css, script.js) from the site root, not from "index.html/".
-if(/\/index\.html\/admin\/?$/.test(location.pathname)){var b=document.createElement('base');b.href=location.pathname.replace(/index\.html\/admin\/?$/,'');document.head.appendChild(b);}
-</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -19,14 +15,8 @@ if(/\/index\.html\/admin\/?$/.test(location.pathname)){var b=document.createElem
 <script>
 (function(){var t;try{t=localStorage.getItem('pjfea-theme');}catch(e){}
 if(t!=='light'&&t!=='dark'){t=window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}
-document.documentElement.setAttribute('data-theme',t);})();
-</script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script>
-// Supabase → Project Settings → API. The anon key is meant to be public; Row Level Security protects the data.
-const SUPABASE_URL = "https://jlwtbkbqmxpjdblmfnam.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impsd3Ria2JxbXhwamRibG1mbmFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIyNTE4OTksImV4cCI6MjEwNzgyNzg5OX0.xYGd9pvz4AyNP3WfWyjUYFbHTxOalKEQpaTz9FJaHFE";
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { detectSessionInUrl: false } });
+document.documentElement.setAttribute('data-theme',t);
+try{if(localStorage.getItem('pjfea-sidebar')==='hidden')document.documentElement.classList.add('sidebar-collapsed');}catch(e){}})();
 </script>
 </head>
 <body>
@@ -80,8 +70,9 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { dete
   <a href="#partners" class="sidebar-link"><span class="sidebar-icon" aria-hidden="true">🤝</span>Partners</a>
   <div class="sidebar-group-label">Support</div>
   <a href="#donate" class="sidebar-link"><span class="sidebar-icon" aria-hidden="true">💝</span>Donate</a>
-  <div class="sidebar-group-label">Staff</div>
-  <a href="index.html/admin" class="sidebar-link" data-admin-link><span class="sidebar-icon" aria-hidden="true">🔐</span>Admin</a>
+  <div class="sidebar-group-label">Visit Us on Our Socials</div>
+  <a href="#socials" class="sidebar-link"><span class="sidebar-icon" aria-hidden="true">🌐</span>All Our Channels</a>
+  <div id="sidebarSocials"><!-- platform links rendered by script.js from SOCIAL_LINKS --></div>
 </aside>
 
 <main class="dashboard-main" id="dashboardMain">
@@ -222,18 +213,31 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { dete
       <div>
         <div class="section-label">Newsroom</div>
         <h2 class="section-title">Stories from the <em>frontlines</em></h2>
+        <p class="newsroom-sub">The latest stories from our blog.</p>
       </div>
+      <a href="https://pjfeastafrica.wordpress.com" class="btn-blog" id="newsroomBlogLink" target="_blank" rel="noopener noreferrer">Visit our blog ↗</a>
     </div>
-    <div id="newsroomGrid" class="newsroom-grid"></div>
+    <div id="newsroomGrid" class="newsroom-grid" aria-live="polite"></div>
+    <div class="newsroom-more"><button type="button" class="btn-blog" id="newsroomMore" hidden>Load more stories</button></div>
   </div>
 </section>
 
-<!-- FULL ARTICLE (rendered dynamically by JS from the article store) -->
-<section id="article-full" class="page">
-  <div class="article-layout">
-    <div class="article-body fade-up" id="articleFullBody"></div>
-    <div class="article-sidebar fade-up fade-up-delay-2" id="articleFullSidebar"></div>
+<!-- STORY READER — a blog post shown inside the site; filled in by script.js -->
+<section id="story" class="page" aria-label="Story">
+  <nav class="story-bar" aria-label="Story navigation">
+    <a href="#newsroom" class="story-back">← Back to Newsroom</a>
+    <div class="story-title" id="storyTitle"></div>
+    <div class="story-nav">
+      <a class="btn-sm" id="storyPrev" hidden></a>
+      <a class="btn-sm" id="storyNext" hidden></a>
+      <a class="btn-sm" id="storyExternal" href="#" target="_blank" rel="noopener noreferrer">Open on blog ↗</a>
+    </div>
+  </nav>
+  <div class="story-frame-wrap">
+    <div class="story-loading" id="storyLoading" aria-live="polite">Loading story…</div>
+    <iframe id="storyFrame" title="Story from our blog" sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-forms"></iframe>
   </div>
+  <div class="story-footer"><a href="#newsroom" class="btn-blog">← Back to all stories</a></div>
 </section>
 
 
@@ -328,6 +332,18 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { dete
   </div>
 </section>
 
+<!-- SOCIAL MEDIA — cards rendered by script.js from SOCIAL_LINKS -->
+<section id="socials" class="page">
+  <div class="container">
+    <div class="fade-up" style="text-align:center;max-width:620px;margin:0 auto 1rem;">
+      <div class="section-label">Social Media</div>
+      <h2 class="section-title">Visit us on <em>our socials</em></h2>
+      <p class="socials-intro">Follow the Peace Journalism Foundation for stories from the field, training updates, awards news and our latest videos.</p>
+    </div>
+    <div id="socialsGrid" class="socials-grid fade-up fade-up-delay-1" role="list"></div>
+  </div>
+</section>
+
 <!-- LEADERSHIP — real photos -->
 <section id="leadership" class="page">
   <div class="container">
@@ -365,7 +381,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { dete
       </article>
       <article class="leader-card" role="listitem">
         <div class="leader-photo">
-          <img src="images/Ayebare-Cynderella.jpeg" alt="Cinderella Ayebare, Community Engagement Officer" style="width:100%;height:100%;object-fit:cover;display:block;">
+          <img src="images/Ayebare-Cynderala-card.jpeg" alt="Cinderella Ayebare, Community Engagement Officer" style="width:100%;height:100%;object-fit:cover;display:block;">
         </div>
         <div class="leader-info">
           <div class="leader-name">Cinderella Ayebare</div>
@@ -616,215 +632,6 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { dete
   </div>
 </section>
 
-<!-- ADMIN -->
-<section id="admin" class="page">
-  <div class="container admin-shell">
-
-    <!-- LOGGED OUT: LOGIN -->
-    <div id="adminLoggedOut">
-      <div class="admin-login-box fade-up">
-        <h2>Staff Sign In</h2>
-        <div class="sub">Admin &amp; Editor access for managing articles and site content.</div>
-        <form id="adminLoginForm" onsubmit="return handleAdminLogin(event);">
-          <div class="form-field">
-            <label for="loginEmail">Email</label>
-            <input type="email" id="loginEmail" autocomplete="email" required>
-          </div>
-          <div class="form-field">
-            <label for="loginPassword">Password</label>
-            <input type="password" id="loginPassword" autocomplete="current-password" required>
-          </div>
-          <div id="loginError" class="form-error" style="display:none;"></div>
-          <button type="submit" class="btn-primary" style="width:100%;margin-top:0.5rem;">Sign In</button>
-        </form>
-      </div>
-    </div>
-
-    <!-- LOGGED IN: DASHBOARD -->
-    <div id="adminLoggedIn" style="display:none;">
-      <div class="admin-topbar">
-        <div>
-          <div class="section-label">Staff Area</div>
-          <h2 class="section-title" style="font-size:1.7rem;">Content Admin</h2>
-        </div>
-        <div style="text-align:right;">
-          <div class="admin-whoami">Signed in as <strong id="whoamiName"></strong> <span id="whoamiRole" class="status-badge published"></span></div>
-          <button class="btn-sm" style="margin-top:0.5rem;" onclick="toggleChangePassword(true)">Change password</button>
-          <button class="btn-sm" style="margin-top:0.5rem;" onclick="handleAdminLogout()">Sign out</button>
-        </div>
-      </div>
-      <form id="changePwForm" class="change-pw-form" onsubmit="return handleChangePassword(event);" hidden>
-        <div class="form-row">
-          <div class="form-field"><label for="cp-new">New password</label><input type="password" id="cp-new" required minlength="8" autocomplete="new-password"></div>
-          <div class="form-field"><label for="cp-confirm">Confirm new password</label><input type="password" id="cp-confirm" required minlength="8" autocomplete="new-password"></div>
-        </div>
-        <div id="changePwMsg" class="form-error" style="display:none;"></div>
-        <button type="submit" class="btn-primary">Save new password</button>
-        <button type="button" class="btn-sm" onclick="toggleChangePassword(false)">Cancel</button>
-      </form>
-
-      <div class="admin-tabs" id="adminTabs">
-        <div class="admin-tab active" data-tab="articles" onclick="switchAdminTab('articles')">Articles</div>
-        <div class="admin-tab" data-tab="new" onclick="switchAdminTab('new')">New Article</div>
-        <div class="admin-tab admin-only" data-tab="settings" onclick="switchAdminTab('settings')">Site Settings</div>
-        <div class="admin-tab admin-only" data-tab="users" onclick="switchAdminTab('users')">Users</div>
-        <div class="admin-tab admin-only" data-tab="donations" onclick="switchAdminTab('donations')">Donations</div>
-      </div>
-
-      <!-- ARTICLES LIST -->
-      <div class="admin-panel active" id="panel-articles">
-        <div id="adminArticleList"></div>
-      </div>
-
-      <!-- NEW / EDIT ARTICLE FORM -->
-      <div class="admin-panel" id="panel-new">
-        <h3 class="admin-section-title" id="articleFormTitle">New Article</h3>
-        <form id="articleForm" onsubmit="return handleArticleSubmit(event);">
-          <input type="hidden" id="af-id">
-          <div class="form-row">
-            <div class="form-field">
-              <label for="af-title">Title</label>
-              <input type="text" id="af-title" required>
-            </div>
-            <div class="form-field">
-              <label for="af-author">Author</label>
-              <input type="text" id="af-author" required>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-field">
-              <label for="af-category">Category</label>
-              <input type="text" id="af-category" placeholder="e.g. Feature" required>
-            </div>
-            <div class="form-field">
-              <label for="af-tag">Tag / Location</label>
-              <input type="text" id="af-tag" placeholder="e.g. South Sudan">
-            </div>
-          </div>
-          <div class="form-field">
-            <label for="af-photo">Photo</label>
-            <input type="file" id="af-photo" accept="image/*">
-            <div class="hint">Optional. Large photos are auto-resized for storage.</div>
-          </div>
-          <div class="form-field">
-            <label for="af-excerpt">Excerpt</label>
-            <textarea id="af-excerpt" style="min-height:80px;" required></textarea>
-          </div>
-          <div class="form-field">
-            <label for="af-body">Body</label>
-            <div class="rte-wrap">
-              <div class="rte-toolbar" id="rteToolbar">
-                <button type="button" class="rte-btn" style="font-weight:800;" onclick="rteExec('bold')" title="Bold">B</button>
-                <button type="button" class="rte-btn" style="font-style:italic;" onclick="rteExec('italic')" title="Italic">I</button>
-                <div class="rte-divider"></div>
-                <button type="button" class="rte-btn" onclick="rteFormatBlock('h1')" title="Heading 1">H1</button>
-                <button type="button" class="rte-btn" onclick="rteFormatBlock('h2')" title="Heading 2">H2</button>
-                <button type="button" class="rte-btn" onclick="rteFormatBlock('h3')" title="Heading 3">H3</button>
-                <button type="button" class="rte-btn" onclick="rteFormatBlock('p')" title="Normal text">¶</button>
-                <button type="button" class="rte-btn" onclick="rteFormatBlock('blockquote')" title="Quote">&quot;</button>
-                <div class="rte-divider"></div>
-                <button type="button" class="rte-btn" onclick="rteExec('insertUnorderedList')" title="Bullet list">•⋮</button>
-                <button type="button" class="rte-btn" onclick="rteExec('insertOrderedList')" title="Numbered list">1.⋮</button>
-                <div class="rte-divider"></div>
-                <button type="button" class="rte-btn rte-wide" onclick="rteInsertLink()" title="Insert link">🔗 Link</button>
-                <button type="button" class="rte-btn rte-wide" onclick="rteExec('unlink')" title="Remove link">Unlink</button>
-                <button type="button" class="rte-btn rte-wide" onclick="rteInsertImage()" title="Insert image">🖼 Image</button>
-                <button type="button" class="rte-btn rte-wide" onclick="rteInsertVideo()" title="Embed video">▶ Video</button>
-                <button type="button" class="rte-btn" onclick="rteExec('insertHorizontalRule')" title="Divider">―</button>
-                <div class="rte-divider"></div>
-                <button type="button" class="rte-btn" onclick="rteExec('undo')" title="Undo">↺</button>
-                <button type="button" class="rte-btn" onclick="rteExec('redo')" title="Redo">↻</button>
-              </div>
-              <div id="af-body" class="rte-editor" contenteditable="true" data-placeholder="Write your story here..."></div>
-            </div>
-            <div class="hint">Select text and use the toolbar to format it. Paste a YouTube/Vimeo link with "Video" to embed it.</div>
-          </div>
-          <div class="form-field" id="af-status-field">
-            <label for="af-status">Status</label>
-            <select id="af-status">
-              <option value="draft">Draft (only I can see it)</option>
-              <option value="pending">Submit for review</option>
-              <option value="published" class="admin-only-option">Published</option>
-            </select>
-          </div>
-          <div id="articleFormError" class="form-error" style="display:none;"></div>
-          <div style="display:flex;gap:0.75rem;margin-top:0.5rem;">
-            <button type="submit" class="btn-primary">Save Article</button>
-            <button type="button" class="btn-sm" onclick="resetArticleForm()">Clear Form</button>
-          </div>
-        </form>
-      </div>
-
-      <!-- SITE SETTINGS -->
-      <div class="admin-panel admin-only" id="panel-settings">
-        <h3 class="admin-section-title">Homepage Content</h3>
-        <form id="settingsForm" onsubmit="return handleSettingsSubmit(event);">
-          <div class="form-field">
-            <label for="st-heroEyebrow">Hero eyebrow text</label>
-            <input type="text" id="st-heroEyebrow">
-          </div>
-          <div class="form-field">
-            <label for="st-heroSub">Hero subtext</label>
-            <textarea id="st-heroSub" style="min-height:70px;"></textarea>
-          </div>
-          <h3 class="admin-section-title" style="margin-top:1.5rem;">About &mdash; Stats</h3>
-          <div class="form-row">
-            <div class="form-field"><label for="st-statFounded">Founded (year)</label><input type="text" id="st-statFounded"></div>
-            <div class="form-field"><label for="st-statCountries">Countries</label><input type="text" id="st-statCountries"></div>
-          </div>
-          <div class="form-field"><label for="st-statPartnerships">Partnerships</label><input type="text" id="st-statPartnerships"></div>
-          <h3 class="admin-section-title" style="margin-top:1.5rem;">Impact Bar</h3>
-          <div class="form-row">
-            <div class="form-field"><label for="st-impactTrained">Journalists trained</label><input type="text" id="st-impactTrained"></div>
-            <div class="form-field"><label for="st-impactMedia">Media houses engaged</label><input type="text" id="st-impactMedia"></div>
-          </div>
-          <div class="form-row">
-            <div class="form-field"><label for="st-impactCountries">Countries reached</label><input type="text" id="st-impactCountries"></div>
-            <div class="form-field"><label for="st-impactYears">Years of impact</label><input type="text" id="st-impactYears"></div>
-          </div>
-          <div id="settingsFormMsg" class="form-error" style="display:none;color:var(--green-text);"></div>
-          <button type="submit" class="btn-primary" style="margin-top:0.5rem;">Save Site Settings</button>
-        </form>
-      </div>
-
-      <!-- DONATIONS -->
-      <div class="admin-panel admin-only" id="panel-donations">
-        <h3 class="admin-section-title">Donations</h3>
-        <div class="donation-toolbar">
-          <div id="donationTotals" class="donation-totals"></div>
-          <label class="donation-filter"><input type="checkbox" id="donationShowAll" onchange="renderDonationList()"> Show unfinished and failed</label>
-        </div>
-        <div id="donationList"></div>
-      </div>
-      <!-- USERS -->
-      <div class="admin-panel admin-only" id="panel-users">
-        <h3 class="admin-section-title">Staff Accounts</h3>
-        <div id="userList"></div>
-        <h3 class="admin-section-title" style="margin-top:2rem;">Add Editor</h3>
-        <form id="userForm" onsubmit="return handleAddUser(event);">
-          <div class="form-row">
-            <div class="form-field"><label for="nu-name">Full name</label><input type="text" id="nu-name" required></div>
-            <div class="form-field"><label for="nu-email">Email</label><input type="email" id="nu-email" required></div>
-          </div>
-          <div class="form-field"><label for="nu-password">Temporary password</label><input type="password" id="nu-password" required minlength="8" autocomplete="new-password"></div>
-          <div id="userFormError" class="form-error" style="display:none;"></div>
-          <button type="submit" class="btn-primary">Add Editor</button>
-        </form>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- NEWSLETTER -->
-<div class="newsletter-band fade-up" role="region" aria-label="Newsletter signup">
-  <h3>Stay close to the work</h3>
-  <p>Monthly updates on peace journalism, training opportunities, and impact stories from across East Africa.</p>
-  <form class="newsletter-form" onsubmit="return handleNewsletter(event);" aria-label="Subscribe to newsletter">
-    <input type="email" placeholder="your@email.com" aria-label="Email address" required>
-    <button type="submit">Subscribe</button>
-  </form>
-</div>
-
 <!-- FOOTER -->
 <footer role="contentinfo">
   <div class="footer-grid">
@@ -837,12 +644,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { dete
         </div>
       </div>
       <p>Promoting peace through responsible journalism. Training, equipping, and inspiring journalists across East Africa since 2014.</p>
-      <div class="footer-social" role="list" aria-label="Social media">
-        <a class="social-btn" href="https://x.com/pjfeastafrica" target="_blank" role="listitem" aria-label="Twitter/X">𝕏</a>
-        <a class="social-btn" href="https://www.facebook.com/share/r/183iTn64gK/" target="_blank" role="listitem" aria-label="Facebook">f</a>
-        <a class="social-btn" href="https://bsky.app/profile/peace-journalism.bsky.social" target="_blank" role="listitem" aria-label="Bluesky">B</a>
-        <a class="social-btn" href="https://www.linkedin.com/posts/peace-journalism-foundation-eastafrica" target="_blank" role="listitem" aria-label="LinkedIn">in</a>
-      </div>
+      <div class="footer-social" id="footerSocial" role="list" aria-label="Social media"></div>
     </div>
     <div class="footer-col">
       <h4>Organisation</h4>
@@ -859,6 +661,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { dete
         <li><a href="#programs">All Programmes</a></li>
         <li><a href="#awards">Peace Journalism Awards</a></li>
         <li><a href="#newsroom">Newsroom</a></li>
+        <li><a href="#socials">Social Media</a></li>
         <li><a href="#donate">Donate</a></li>
       </ul>
     </div>
@@ -878,37 +681,30 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { dete
 </footer>
 
 </main>
-<!-- DONATE DIALOG -->
+<!-- DONATE DIALOG — the number and account name come from DONATE_MOMO in script.js -->
 <div class="donate-modal" id="donateModal" hidden>
   <div class="donate-dialog" role="dialog" aria-modal="true" aria-labelledby="dn-title">
     <button type="button" class="donate-close" onclick="closeDonate()" aria-label="Close">&times;</button>
-    <form id="donateForm" onsubmit="return handleDonateSubmit(event);">
-      <div class="section-label">Make a donation</div>
-      <h3 class="donate-title" id="dn-title">Donate to the <span id="dn-fundName"></span></h3>
-      <div class="donate-freq" role="radiogroup" aria-label="Frequency">
-        <label><input type="radio" name="dn-frequency" value="once" checked><span>One-time</span></label>
-        <label><input type="radio" name="dn-frequency" value="monthly"><span>Monthly</span></label>
+    <div class="section-label">Give by Mobile Money</div>
+    <h3 class="donate-title" id="dn-title">Donate to the <span id="dn-fundName"></span></h3>
+    <div class="momo-number-box">
+      <div class="momo-label">Send your gift to</div>
+      <div class="momo-number" id="dn-number"></div>
+      <div class="momo-name">Registered name: <strong id="dn-accountName"></strong></div>
+      <div class="momo-actions">
+        <button type="button" class="btn-sm" id="dn-copy" onclick="copyDonateNumber()">Copy number</button>
+        <a class="btn-sm" id="dn-call" href="#">Call</a>
       </div>
-      <div class="form-row">
-        <div class="form-field"><label for="dn-currency">Currency</label>
-          <select id="dn-currency" onchange="onDonateCurrencyChange()"><option value="USD">USD ($)</option><option value="UGX">UGX (USh)</option></select></div>
-        <div class="form-field"><label for="dn-amount">Amount</label><input type="number" id="dn-amount" min="1" step="any" required></div>
-      </div>
-      <div class="form-field"><label for="dn-name">Full name</label><input type="text" id="dn-name" autocomplete="name" required maxlength="100"></div>
-      <div class="form-row">
-        <div class="form-field"><label for="dn-email">Email</label><input type="email" id="dn-email" autocomplete="email" required></div>
-        <div class="form-field"><label for="dn-phone">Phone (optional)</label><input type="tel" id="dn-phone" autocomplete="tel" placeholder="+256 7XX XXX XXX"></div>
-      </div>
-      <div id="dn-error" class="form-error" style="display:none;"></div>
-      <button type="submit" class="btn-donate-fund" id="dn-submit">Continue to secure payment →</button>
-      <p class="donate-note">Pay with MTN MoMo, Airtel Money or card. Payments are processed securely by Flutterwave; we never see your card or PIN.</p>
-    </form>
-    <div id="donateResult" hidden>
-      <div class="donate-result-icon" id="dn-resultIcon" aria-hidden="true"></div>
-      <h3 class="donate-title" id="dn-resultTitle"></h3>
-      <p class="donate-result-text" id="dn-resultText"></p>
-      <button type="button" class="btn-donate-fund" onclick="closeDonate()">Close</button>
+      <div class="momo-copied" id="dn-copied" aria-live="polite"></div>
     </div>
+    <p class="momo-amount" id="dn-amountRow" hidden>Suggested gift: <strong id="dn-amount"></strong> (or the same value in UGX)</p>
+    <ol class="momo-steps">
+      <li><strong>MTN MoMo:</strong> dial <strong>*165#</strong> → Send Money. <strong>Airtel Money:</strong> dial <strong>*185#</strong> → Send Money.</li>
+      <li>Enter the number above and your amount. Before you confirm, check that the name shown matches the registered name above.</li>
+      <li>If you can add a reason, write <strong id="dn-reference"></strong>.</li>
+    </ol>
+    <p class="donate-note">Sending from outside Uganda, or want a receipt? Email <a href="mailto:peacejournalismfoundation@gmail.com">peacejournalismfoundation@gmail.com</a> and we will help.</p>
+    <button type="button" class="btn-donate-fund" onclick="closeDonate()">Done</button>
   </div>
 </div>
 
