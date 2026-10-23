@@ -6,8 +6,11 @@
 <meta name="description" content="Peace Journalism Foundation East Africa — Promoting peace through responsible journalism across East Africa.">
 <meta property="og:title" content="Peace Journalism Foundation East Africa">
 <meta property="og:description" content="Shifting Narratives. Building Peace. Amplifying Grassroots Voices.">
-<meta property="og:url" content="https://pjfea.org">
-<title>Peace Journalism Foundation East Africa | pjfea.org</title>
+<meta property="og:url" content="https://pjfugandaeastafrica.org">
+<meta property="og:image" content="https://pjfugandaeastafrica.org/images/og-image.jpg">
+<link rel="icon" type="image/png" href="images/favicon.png">
+<link rel="apple-touch-icon" href="images/pjfea-logo-round.png">
+<title>Peace Journalism Foundation East Africa | pjfugandaeastafrica.org</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -26,10 +29,10 @@ try{if(localStorage.getItem('pjfea-sidebar')==='hidden')document.documentElement
   <div class="topbar-left">
     <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle navigation" aria-expanded="false">☰</button>
     <a href="#hero" class="nav-logo" aria-label="Peace Journalism Foundation East Africa">
-      <div class="nav-logo-mark" aria-hidden="true">PJ</div>
+      <img class="nav-logo-img" src="images/pjfea-logo-round.png" alt="" width="44" height="44">
       <div>
         <div class="nav-logo-name">Peace Journalism Foundation</div>
-        <div class="nav-logo-sub">East Africa · pjfea.org</div>
+        <div class="nav-logo-sub">East Africa<span class="nav-logo-domain"> · pjfugandaeastafrica.org</span></div>
       </div>
     </a>
   </div>
@@ -213,7 +216,7 @@ try{if(localStorage.getItem('pjfea-sidebar')==='hidden')document.documentElement
       <div>
         <div class="section-label">Newsroom</div>
         <h2 class="section-title">Stories from the <em>frontlines</em></h2>
-        <p class="newsroom-sub">The latest stories from our blog.</p>
+        <p class="newsroom-sub">The latest from our blog. Every story opens on our blog in a new tab.</p>
       </div>
       <a href="https://pjfeastafrica.wordpress.com" class="btn-blog" id="newsroomBlogLink" target="_blank" rel="noopener noreferrer">Visit our blog ↗</a>
     </div>
@@ -222,26 +225,6 @@ try{if(localStorage.getItem('pjfea-sidebar')==='hidden')document.documentElement
   </div>
 </section>
 
-<!-- STORY READER — a blog post shown inside the site; filled in by script.js -->
-<section id="story" class="page" aria-label="Story">
-  <nav class="story-bar" aria-label="Story navigation">
-    <a href="#newsroom" class="story-back">← Back to Newsroom</a>
-    <div class="story-title" id="storyTitle"></div>
-    <div class="story-nav">
-      <a class="btn-sm" id="storyPrev" hidden></a>
-      <a class="btn-sm" id="storyNext" hidden></a>
-      <a class="btn-sm" id="storyExternal" href="#" target="_blank" rel="noopener noreferrer">Open on blog ↗</a>
-    </div>
-  </nav>
-  <div class="story-frame-wrap">
-    <div class="story-loading" id="storyLoading" aria-live="polite">Loading story…</div>
-    <iframe id="storyFrame" title="Story from our blog" sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-forms"></iframe>
-  </div>
-  <div class="story-footer"><a href="#newsroom" class="btn-blog">← Back to all stories</a></div>
-</section>
-
-
-<!-- PROGRAMS with real photos -->
 <section id="programs" class="page">
   <div class="container">
     <div class="fade-up" style="max-width:640px;margin-bottom:1rem;">
@@ -397,6 +380,39 @@ try{if(localStorage.getItem('pjfea-sidebar')==='hidden')document.documentElement
           <div class="leader-role">Partnerships & Awards Lead</div>
         </div>
       </article>
+      <article class="leader-card" role="listitem">
+        <div class="leader-photo">
+          <img src="images/Aggrey-Ojok.jpeg" alt="Aggrey Ojok Obwoyo, Media and Community Peacebuilding Lead" style="width:100%;height:100%;object-fit:cover;display:block;">
+        </div>
+        <div class="leader-info">
+          <div class="leader-name">Aggrey Ojok Obwoyo</div>
+          <div class="leader-role">Media & Community Peacebuilding Lead</div>
+        </div>
+      </article>
+    </div>
+
+    <div class="advisory-header fade-up">
+      <h3 class="advisory-title">Advisory Board</h3>
+      <p class="advisory-org">Peace Journalism Foundation of East Africa (PJF)</p>
+    </div>
+    <div class="leadership-grid advisory-grid fade-up fade-up-delay-1" role="list">
+      <article class="leader-card" role="listitem">
+        <div class="leader-photo leader-photo-initials" aria-hidden="true">AA</div>
+        <div class="leader-info">
+          <div class="leader-name">Aromo Agnes</div>
+          <div class="leader-role">Chairperson, Board of Directors</div>
+          <div class="leader-org">Peace Journalism Foundation of East Africa (PJF)</div>
+        </div>
+      </article>
+      <article class="leader-card" role="listitem">
+        <div class="leader-photo">
+          <img src="images/Ochan-Hannington.jpeg" alt="Ochan A. Hannington, Advisory Board Member" style="width:100%;height:100%;object-fit:cover;display:block;">
+        </div>
+        <div class="leader-info">
+          <div class="leader-name">Ochan A. Hannington</div>
+          <div class="leader-role">Advisory Board Member, Media Production & Partner Engagement</div>
+        </div>
+      </article>
     </div>
   </div>
 </section>
@@ -496,43 +512,51 @@ try{if(localStorage.getItem('pjfea-sidebar')==='hidden')document.documentElement
       <h2 class="section-title">Peace Journalism <em>Awards</em></h2>
       <p class="section-intro">Recognising exceptional journalism that advances peace, social cohesion, and constructive public discourse across East Africa.</p>
       <div class="award-categories" role="list">
-        <div class="award-cat" role="listitem"><div class="award-cat-icon" aria-hidden="true">🏆</div><div class="award-cat-name">Outstanding Peace Story of the Year</div></div>
-        <div class="award-cat" role="listitem"><div class="award-cat-icon" aria-hidden="true">📺</div><div class="award-cat-name">Best Broadcast Peace Feature</div></div>
-        <div class="award-cat" role="listitem"><div class="award-cat-icon" aria-hidden="true">📱</div><div class="award-cat-name">Best Digital Peace Content</div></div>
-        <div class="award-cat" role="listitem"><div class="award-cat-icon" aria-hidden="true">🌍</div><div class="award-cat-name">Community Media Impact Award</div></div>
-        <div class="award-cat" role="listitem"><div class="award-cat-icon" aria-hidden="true">🎓</div><div class="award-cat-name">Student Journalist of the Year</div></div>
-        <div class="award-cat" role="listitem"><div class="award-cat-icon" aria-hidden="true">✍️</div><div class="award-cat-name">Investigative Peace Reporting</div></div>
-      </div>
-      <div class="awards-deadline">
-        <div class="deadline-label">Nominations Close In</div>
-        <div class="deadline-countdown">
-          <div class="countdown-unit"><span class="countdown-num" id="cd-days">47</span><span class="countdown-label">Days</span></div>
-          <div class="countdown-unit"><span class="countdown-num" id="cd-hours">12</span><span class="countdown-label">Hours</span></div>
-          <div class="countdown-unit"><span class="countdown-num" id="cd-mins">38</span><span class="countdown-label">Mins</span></div>
+        <div class="award-cat" role="listitem">
+          <div class="award-cat-icon" aria-hidden="true">🏆</div>
+          <div class="award-cat-name">Outstanding Peace Story of the Year</div>
+          <p class="award-cat-desc">The most powerful single story of the year that eased tension, built understanding or gave a voice to people affected by conflict.</p>
+          <a class="award-cat-link" data-award="Outstanding Peace Story of the Year" href="#" target="_blank" rel="noopener noreferrer">Nominate on WhatsApp ↗</a>
+        </div>
+        <div class="award-cat" role="listitem">
+          <div class="award-cat-icon" aria-hidden="true">📺</div>
+          <div class="award-cat-name">Best Broadcast Peace Feature</div>
+          <p class="award-cat-desc">Radio or TV features that explore conflict and peace with balance, context and the voices of ordinary people.</p>
+          <a class="award-cat-link" data-award="Best Broadcast Peace Feature" href="#" target="_blank" rel="noopener noreferrer">Nominate on WhatsApp ↗</a>
+        </div>
+        <div class="award-cat" role="listitem">
+          <div class="award-cat-icon" aria-hidden="true">📱</div>
+          <div class="award-cat-name">Best Digital Peace Content</div>
+          <p class="award-cat-desc">Online articles, videos, podcasts or social media work that counters hate speech and misinformation and opens up dialogue.</p>
+          <a class="award-cat-link" data-award="Best Digital Peace Content" href="#" target="_blank" rel="noopener noreferrer">Nominate on WhatsApp ↗</a>
+        </div>
+        <div class="award-cat" role="listitem">
+          <div class="award-cat-icon" aria-hidden="true">🌍</div>
+          <div class="award-cat-name">Community Media Impact Award</div>
+          <p class="award-cat-desc">Community radio, local outlets or citizen journalists whose reporting made a real difference to peace where they live.</p>
+          <a class="award-cat-link" data-award="Community Media Impact Award" href="#" target="_blank" rel="noopener noreferrer">Nominate on WhatsApp ↗</a>
+        </div>
+        <div class="award-cat" role="listitem">
+          <div class="award-cat-icon" aria-hidden="true">🎓</div>
+          <div class="award-cat-name">Student Journalist of the Year</div>
+          <p class="award-cat-desc">Outstanding peace-focused reporting by a journalism or media student.</p>
+          <a class="award-cat-link" data-award="Student Journalist of the Year" href="#" target="_blank" rel="noopener noreferrer">Nominate on WhatsApp ↗</a>
+        </div>
+        <div class="award-cat" role="listitem">
+          <div class="award-cat-icon" aria-hidden="true">✍️</div>
+          <div class="award-cat-name">Investigative Peace Reporting</div>
+          <p class="award-cat-desc">In-depth investigations into the causes of conflict, abuse or injustice, reported responsibly and without inflaming tensions.</p>
+          <a class="award-cat-link" data-award="Investigative Peace Reporting" href="#" target="_blank" rel="noopener noreferrer">Nominate on WhatsApp ↗</a>
         </div>
       </div>
-    </div>
-    <div class="fade-up fade-up-delay-2">
-      <div class="nomination-box">
-        <div class="nomination-title">Submit a Nomination</div>
-        <p class="nomination-sub">Recognise exceptional peace journalism across East Africa. Open to journalists, editors, and media organisations.</p>
-        <div class="form-field"><label for="nom-name">Your Full Name</label><input type="text" id="nom-name" placeholder="e.g. Sarah Jane Bradfield"></div>
-        <div class="form-field"><label for="nom-org">Organisation</label><input type="text" id="nom-org" placeholder="Media house or institution"></div>
-        <div class="form-field"><label for="nom-email">Email Address</label><input type="email" id="nom-email" placeholder="your@email.com"></div>
-        <div class="form-field">
-          <label for="nom-category">Award Category</label>
-          <select id="nom-category">
-            <option value="">Select category...</option>
-            <option>Outstanding Peace Story of the Year</option>
-            <option>Best Broadcast Peace Feature</option>
-            <option>Best Digital Peace Content</option>
-            <option>Community Media Impact Award</option>
-            <option>Student Journalist of the Year</option>
-            <option>Investigative Peace Reporting</option>
-          </select>
-        </div>
-        <div class="form-field"><label for="nom-link">Link to Nominated Work</label><input type="url" id="nom-link" placeholder="https://..."></div>
-        <button class="btn-primary" style="width:100%;margin-top:0.5rem;" onclick="alert('Thank you — your nomination has been received. Our team will be in touch at peacejournalismfoundation@gmail.com')">Submit Nomination →</button>
+      <div class="awards-howto">
+        <h3 class="awards-howto-title">How to nominate</h3>
+        <ol class="awards-howto-steps">
+          <li>Choose the category that fits the work best. You can nominate your own work or someone else's.</li>
+          <li>Tap <strong>Nominate on WhatsApp</strong>. A message opens with the details we need: the nominee, their media house, a link to the work and your contact.</li>
+          <li>Fill in the details and send it to us on <strong>+256 746 279 441</strong>. We will confirm we've received it.</li>
+        </ol>
+        <a class="btn-primary awards-howto-btn" data-award="" href="#" target="_blank" rel="noopener noreferrer">Send a nomination on WhatsApp ↗</a>
       </div>
     </div>
   </div>
@@ -588,7 +612,6 @@ try{if(localStorage.getItem('pjfea-sidebar')==='hidden')document.documentElement
         </div>
         <div class="fund-body">
           <p class="fund-impact">Youth poetry clubs in schools across northern Uganda use creative arts to explore peace, conflict, and identity. Your support trains facilitators and reaches 2,000+ young people each year.</p>
-          <div class="donation-amounts"><button class="amount-btn" onclick="toggleAmount(this)">$25</button><button class="amount-btn active" onclick="toggleAmount(this)">$50</button><button class="amount-btn" onclick="toggleAmount(this)">$100</button><button class="amount-btn" onclick="toggleAmount(this)">Other</button></div>
           <button class="btn-donate-fund" data-fund="poetry-peace-clubs" onclick="openDonate(this)">Donate to This Fund →</button>
         </div>
       </div>
@@ -600,7 +623,6 @@ try{if(localStorage.getItem('pjfea-sidebar')==='hidden')document.documentElement
         </div>
         <div class="fund-body">
           <p class="fund-impact">The annual awards recognise journalists producing work that advances peace. Your support funds prizes, the gala, and a visibility campaign that amplifies award-winning stories across the region.</p>
-          <div class="donation-amounts"><button class="amount-btn" onclick="toggleAmount(this)">$50</button><button class="amount-btn active" onclick="toggleAmount(this)">$100</button><button class="amount-btn" onclick="toggleAmount(this)">$500</button><button class="amount-btn" onclick="toggleAmount(this)">Other</button></div>
           <button class="btn-donate-fund" data-fund="awards" onclick="openDonate(this)">Donate to This Fund →</button>
         </div>
       </div>
@@ -612,7 +634,6 @@ try{if(localStorage.getItem('pjfea-sidebar')==='hidden')document.documentElement
         </div>
         <div class="fund-body">
           <p class="fund-impact">Training young digital content creators to produce peace-oriented social media content, combating misinformation where it spreads most — online. 50 influencers trained per cohort.</p>
-          <div class="donation-amounts"><button class="amount-btn" onclick="toggleAmount(this)">$25</button><button class="amount-btn active" onclick="toggleAmount(this)">$75</button><button class="amount-btn" onclick="toggleAmount(this)">$200</button><button class="amount-btn" onclick="toggleAmount(this)">Other</button></div>
           <button class="btn-donate-fund" data-fund="digital-influencers" onclick="openDonate(this)">Donate to This Fund →</button>
         </div>
       </div>
@@ -624,7 +645,6 @@ try{if(localStorage.getItem('pjfea-sidebar')==='hidden')document.documentElement
         </div>
         <div class="fund-body">
           <p class="fund-impact">A six-month immersive fellowship placing emerging journalists with mentors, newsrooms, and field assignments. Your contribution directly sponsors one fellow through their entire journey.</p>
-          <div class="donation-amounts"><button class="amount-btn" onclick="toggleAmount(this)">$100</button><button class="amount-btn active" onclick="toggleAmount(this)">$250</button><button class="amount-btn" onclick="toggleAmount(this)">$1000</button><button class="amount-btn" onclick="toggleAmount(this)">Other</button></div>
           <button class="btn-donate-fund" data-fund="fellowship" onclick="openDonate(this)">Donate to This Fund →</button>
         </div>
       </div>
@@ -637,7 +657,7 @@ try{if(localStorage.getItem('pjfea-sidebar')==='hidden')document.documentElement
   <div class="footer-grid">
     <div>
       <div class="nav-logo" style="margin-bottom:1rem;">
-        <div class="nav-logo-mark" style="flex-shrink:0;">PJ</div>
+        <img class="nav-logo-img nav-logo-img-lg" src="images/pjfea-logo-round.png" alt="" width="56" height="56">
         <div>
           <div class="nav-logo-name">Peace Journalism Foundation</div>
           <div class="nav-logo-sub">East Africa</div>
@@ -670,12 +690,13 @@ try{if(localStorage.getItem('pjfea-sidebar')==='hidden')document.documentElement
       <ul>
         <li><a href="mailto:peacejournalismfoundation@gmail.com">peacejournalismfoundation@gmail.com</a></li>
         <li><a href="#">Kampala, Uganda</a></li>
-        <li><a href="https://x.com/pjfeastafrica" target="_blank">@Pjfeastafrica</a></li>
+        <li><a href="https://wa.me/256746279441" target="_blank" rel="noopener noreferrer">WhatsApp: +256 746 279 441</a></li>
+        <li><a href="https://x.com/pjfeastafrica" target="_blank" rel="noopener noreferrer">@Pjfeastafrica</a></li>
       </ul>
     </div>
   </div>
   <div class="footer-bottom">
-    <span>© 2026 Peace Journalism Foundation East Africa · <span class="footer-gold">pjfea.org</span></span>
+    <span>© 2026 Peace Journalism Foundation East Africa · <span class="footer-gold">pjfugandaeastafrica.org</span></span>
     <span>Building peace through journalism · Kampala, Uganda</span>
   </div>
 </footer>
@@ -697,13 +718,13 @@ try{if(localStorage.getItem('pjfea-sidebar')==='hidden')document.documentElement
       </div>
       <div class="momo-copied" id="dn-copied" aria-live="polite"></div>
     </div>
-    <p class="momo-amount" id="dn-amountRow" hidden>Suggested gift: <strong id="dn-amount"></strong> (or the same value in UGX)</p>
+    <p class="momo-amount">Give <strong>any amount you like, in UGX</strong>. Every shilling helps.</p>
     <ol class="momo-steps">
       <li><strong>MTN MoMo:</strong> dial <strong>*165#</strong> → Send Money. <strong>Airtel Money:</strong> dial <strong>*185#</strong> → Send Money.</li>
       <li>Enter the number above and your amount. Before you confirm, check that the name shown matches the registered name above.</li>
       <li>If you can add a reason, write <strong id="dn-reference"></strong>.</li>
     </ol>
-    <p class="donate-note">Sending from outside Uganda, or want a receipt? Email <a href="mailto:peacejournalismfoundation@gmail.com">peacejournalismfoundation@gmail.com</a> and we will help.</p>
+    <p class="donate-note">After sending, message us on <a href="https://wa.me/256746279441" target="_blank" rel="noopener noreferrer">WhatsApp</a> so we can thank you. Sending from outside Uganda, or want a receipt? WhatsApp or email <a href="mailto:peacejournalismfoundation@gmail.com">peacejournalismfoundation@gmail.com</a> and we will help.</p>
     <button type="button" class="btn-donate-fund" onclick="closeDonate()">Done</button>
   </div>
 </div>
