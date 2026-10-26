@@ -166,7 +166,7 @@ function renderNewsroom(){
           <span class="article-category" style="align-self:flex-start;">${escapeHtml(a.category)}</span>
           <div class="news-card-title">${escapeHtml(a.title)}</div>
           <div class="news-card-excerpt">${escapeHtml(short)}</div>
-          <div class="news-card-byline">${a.author?'By '+escapeHtml(a.author)+' · ':''}${escapeHtml(formatDateLabel(a.date))}</div>
+          <div class="news-card-byline">${a.author?'By '+escapeHtml(a.author)+', ':''}${escapeHtml(formatDateLabel(a.date))}</div>
           <span class="news-card-link">Read on our blog ↗</span>
         </div>
       </a>`;
