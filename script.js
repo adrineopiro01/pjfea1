@@ -1,11 +1,13 @@
+// Reveal once 15% of the element is on screen, or once it fills 15% of the screen
+// (blocks taller than the screen can never reach 15% of their own height on a phone).
 const observer=new IntersectionObserver(entries=>{
   entries.forEach(e=>{
-    if(e.isIntersecting){
+    if(e.isIntersecting&&(e.intersectionRatio>=0.15||e.intersectionRect.height>=window.innerHeight*0.15)){
       e.target.classList.add('visible');
       e.target.querySelectorAll('[data-target]').forEach(animateCounter);
     }
   });
-},{threshold:0.15});
+},{threshold:[0,0.05,0.1,0.15]});
 document.querySelectorAll('.fade-up').forEach(el=>observer.observe(el));
 
 const impactObs=new IntersectionObserver(entries=>{
@@ -61,10 +63,8 @@ function formatDateLabel(dateStr){
    An empty url shows "Link coming soon". The Social Media page, the sidebar and the footer all read from this list. */
 const SOCIAL_LINKS=[
   {icon:'youtube',platform:'YouTube',name:'Voices of Peace PJF',short:'Voices of Peace',url:'https://www.youtube.com/@VoicesofPeacePJF',blurb:'Videos, interviews and documentaries from our peace journalism work.'},
-  {icon:'youtube',platform:'YouTube',name:'Refugee and Migration Media Network',short:'Migration Network',url:'https://www.youtube.com/@refugeeandmigrationmedianetw',blurb:'Our channel for reporting on refugees and migration.'},
   {icon:'x',platform:'X (Twitter)',name:'@pjfeastafrica',url:'https://x.com/pjfeastafrica',blurb:'Quick updates, breaking stories and conversations on peace and media.'},
   {icon:'facebook',platform:'Facebook',name:'Peace Journalism Foundation',url:'https://www.facebook.com/share/r/183iTn64gK/',blurb:'Community stories, event photos and training highlights.'},
-  {icon:'linkedin',platform:'LinkedIn',name:'Peace Journalism Foundation East Africa',url:'https://www.linkedin.com/company/peace-journalism-foundation-east-africa/',blurb:'Organisational news, partnerships, fellowships and opportunities.'},
   {icon:'instagram',platform:'Instagram',name:'@pjf.eastafrica',short:'PJF Instagram',url:'https://www.instagram.com/pjf.eastafrica/',blurb:'Photos and short videos from our trainings, events and field work.'},
   {icon:'instagram',platform:'Instagram',name:'Poets for Peace',short:'Poets for Peace',url:'https://www.instagram.com/poetsforpeace.eastafrica/',blurb:'Poetry and creative voices for peace from East Africa.'},
   {icon:'blog',platform:'Blog',name:'Our Blog',url:'https://pjfeastafrica.wordpress.com/',blurb:'In-depth stories and features from journalists across East Africa.'},
